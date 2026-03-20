@@ -1,0 +1,6 @@
+__pycache__/
+.vscode/
+
+# keep the md file in data
+data/*
+!*.md
