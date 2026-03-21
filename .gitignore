@@ -4,3 +4,7 @@ __pycache__/
 # keep the md file in data
 data/*
 !*.md
+
+#for files hierarchy
+images/*
+!.gitkeep
