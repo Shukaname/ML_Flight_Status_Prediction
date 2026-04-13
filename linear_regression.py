@@ -1,32 +1,15 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, mean_squared_error, mean_absolute_error
+import separate_data as sd
 
-def separate_data(data):
-    #Les datas sont trops grosses pour mon petit PC #HELP
-    #je crée une matrice provisoire de 1/50 de data pour faire mes tests
-    data_mini = data.sample(frac=0.02, random_state=42)
 
-    X_df = data_mini.drop(columns=['ArrDelay', 'IsDelay'])
-    y_reg = data_mini['ArrDelay'] #Regression (combien de temps de delay)
-    y_class = data_mini['IsDelay'] #Classification (est-ce que le vol est en retard ou pas)
 
-    #on transforme les conlonnes de texte en variables numeriques
-    #la colonne airline va etre transformée en plusieurs colonne de 0 ou de 1 (une pour chaque compagnie aerienne)
-    #pour l'airline Delta, la colonne aura des 1 si l'avion est opéré par Delta et des 0 sinon
-    X_df_encoded = pd.get_dummies(X_df, drop_first=True, dtype=int)
+def call_data_preparation(data, size = 1.0):
+    X_train_final, X_test_final, y_train_reg, y_test_reg, y_train_class, y_test_class = sd.separate_data(data, size)
+    return X_train_final, X_test_final, y_train_reg, y_test_reg, y_train_class, y_test_class
 
-    # Split 
-    X_train, X_test, y_train_reg, y_test_reg = train_test_split(
-        X_df_encoded.to_numpy(), y_reg.to_numpy(), test_size=0.2, random_state=42 )
-    
-    # On récupère les labels de classification pour les mêmes index
-    X_train, X_test, y_train_class, y_test_class = train_test_split(
-        X_df_encoded.to_numpy(), y_class.to_numpy(), test_size=0.2, random_state=42 )
-
-    return X_train, X_test, y_train_reg, y_test_reg, y_train_class, y_test_class
 
 def featureNormalize(X):
     mu = np.mean(X, axis=0)
@@ -77,20 +60,20 @@ def predict_and_evaluate(X_test, y_test_reg, theta_final, seuil=5):
     
 
     #-------------------------Regression------------------------------------
+    print(f"\n--- ÉVALUATION RÉGRESSION (Seuil {seuil} min) ---")
 
     # On affiche les 5 premières prédictions vs la réalité
-    comparaison = pd.DataFrame({
+    comparaison_reg = pd.DataFrame({
         'Prédiction (min)': predictions[:5],
         'Réalité (min)': y_test_reg[:5]
     })
     print(f"\n--- Comparaison Regression (Seuil de {seuil}min) ---")
-    print(comparaison)
+    print(comparaison_reg)
 
     rmse = np.sqrt(mean_squared_error(y_test_reg, predictions))
     mae = mean_absolute_error(y_test_reg, predictions)
     accuracy_reg = np.mean(np.abs(predictions - y_test_reg) <= seuil) * 100
 
-    print(f"\n--- ÉVALUATION RÉGRESSION (Seuil {seuil} min) ---")
     print(f"Accuracy de la regression pour un seuil de {seuil} minutes: {accuracy_reg:.2f} %")
     print(f"Erreur moyenne (MAE) : {mae:.2f} min | Erreur quadratique (RMSE) : {rmse:.2f} min")
 
@@ -101,7 +84,6 @@ def predict_and_evaluate(X_test, y_test_reg, theta_final, seuil=5):
     accuracy_class = np.mean(pred_is_delay == true_is_delay) * 100
     
     print(f"\n--- ÉVALUATION CLASSIFICATION (Seuil de {seuil} min) ---")
-    print(f"\nAccuracy de la classification pour un seuil de {seuil} minutes: {accuracy_class:.2f} %")
 
     # On affiche les 5 premiers pour comparer avec la régression au-dessus
     comparaison_class = pd.DataFrame({
@@ -121,6 +103,8 @@ def predict_and_evaluate(X_test, y_test_reg, theta_final, seuil=5):
     print("\nMatrice de Confusion :")
     print(f"Vrais Négatifs (À l'heure) : {cm[0,0]} | Faux Positifs : {cm[0,1]}")
     print(f"Faux Négatifs : {cm[1,0]} | Vrais Positifs (Retards détectés) : {cm[1,1]}")
+
+    print(f"\nAccuracy de la classification pour un seuil de {seuil} minutes: {accuracy_class:.2f} %")
     
     
     return predictions
